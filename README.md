@@ -25,7 +25,7 @@ Next.js App Router API
 
 Core services
   |
-  |-- Gemini 2.5 Flash
+  |-- Gemini 3.5 Flash
   |     - transcript intent scoring
   |
   |-- Redis
