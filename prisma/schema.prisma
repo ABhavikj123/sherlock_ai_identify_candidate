@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InterviewStatus {
+  ACTIVE
+  COMPLETED
+  TRAINED
+}
+
+model Interview {
+  id                String            @id @default(cuid())
+  candidateName     String
+  candidateEmail    String
+  calendarInvite    String?
+  scheduledAt       DateTime?
+  interviewerNames  Json
+  status            InterviewStatus   @default(ACTIVE)
+  finalPredictionId String?
+  trueCandidateId   String?
+  reviewNotes       String?
+  createdAt         DateTime          @default(now())
+  startedAt         DateTime          @default(now())
+  endedAt           DateTime?
+  participants      Participant[]
+  snapshots         ParticipantSnapshot[]
+  trainingRuns      TrainingRun[]
+}
+
+model Participant {
+  id               String                @id @default(cuid())
+  interviewId      String
+  interview        Interview             @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  displayName      String?
+  email            String?
+  webcamOn         Boolean               @default(false)
+  speakerOn        Boolean               @default(false)
+  screenShareOn    Boolean               @default(false)
+  speakingDuration Float                 @default(0)
+  transcript       String                @default("")
+  textIntent       Float                 @default(0.5)
+  score            Float                 @default(0.5)
+  features         Json
+  reasoning        Json
+  groundTruthLabel Int?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  snapshots        ParticipantSnapshot[]
+
+  @@index([interviewId])
+}
+
+model ParticipantSnapshot {
+  id               String    @id @default(cuid())
+  interviewId      String
+  interview        Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  participantId    String
+  participant      Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  features         Json
+  score            Float
+  reasoning        Json
+  transcript       String?
+  groundTruthLabel Int?
+  createdAt        DateTime  @default(now())
+
+  @@index([interviewId])
+  @@index([participantId])
+}
+
+model ModelWeights {
+  id            String   @id @default("global")
+  speakingRatio Float   @default(1.5)
+  screenShare   Float   @default(0.35)
+  webcam        Float   @default(0.25)
+  textIntent    Float   @default(1.8)
+  bias          Float   @default(-1.1)
+  learningRate  Float   @default(0.12)
+  prompt        String   @default("Rate the probability from 0.0 to 1.0 that this text is someone answering a technical question vs asking one. Return ONLY the float.")
+  updatedAt     DateTime @updatedAt
+}
+
+model TrainingRun {
+  id            String    @id @default(cuid())
+  interviewId   String
+  interview     Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  beforeWeights Json
+  afterWeights  Json
+  status        String
+  createdAt     DateTime  @default(now())
+
+  @@index([interviewId])
+}
